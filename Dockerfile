@@ -1,15 +1,17 @@
-FROM node:latest AS dev
+FROM node:20-alpine AS dependence
 WORKDIR /app
+RUN corepack enable
+COPY ["package.json", "pnpm-lock.yaml", "/app/"]
+# VOLUME [ "/app/node_modules" ]
+RUN pnpm install
 EXPOSE 3000
-COPY package.json /app/
-RUN npm install
-CMD ["npm", "start"]
 
-FROM node:latest AS prod
-WORKDIR /app
-EXPOSE 3000
-COPY --from=dev /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-RUN npm i -g pm2
-CMD ["pm2-runtime", "start", "--name", "api", "npm", "--", "run", "start:prod"]
+FROM dependence AS dev
+VOLUME [ "/app" ]
+CMD [ "pnpm", "start:dev" ]
+
+
+FROM dependence
+COPY . /app/
+CMD [ "pnpm", "prod" ]
+
